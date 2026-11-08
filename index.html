@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f3a5f">
+<title>Construction Expense Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#f3f5f9;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;--brand:#1f3a5f;--accent:#f59e0b;
+        --ok:#16a34a;--warn:#f59e0b;--bad:#dc2626;--blue:#2563eb}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  header{background:var(--brand);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;flex:1;min-width:180px}
+  header small{display:block;font-weight:400;opacity:.75;font-size:12px}
+  .hbtn{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer}
+  .hbtn:hover{background:rgba(255,255,255,.25)}
+  .hbtn.on{background:var(--accent);color:#1f2937;font-weight:600}
+  main{max-width:1200px;margin:0 auto;padding:14px}
+  .banner{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:13px}
+  .banner.err{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .kpi{background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--line)}
+  .kpi .l{color:var(--muted);font-size:12px}
+  .kpi .v{font-size:20px;font-weight:700;margin-top:4px}
+  .kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .card h2{font-size:14px;margin:0 0 10px;color:var(--brand)}
+  .chartbox{position:relative;height:250px}
+  .bar{height:9px;background:#e5e7eb;border-radius:6px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--blue)}
+  .bar>i.warn{background:var(--warn)}.bar>i.bad{background:var(--bad)}.bar>i.ok{background:var(--ok)}
+  .brow{margin-bottom:11px}
+  .brow .t{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:4px}
+  .brow .t span:last-child{color:var(--muted);text-align:right}
+  .over{color:var(--bad);font-weight:600}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.Paid{background:#dcfce7;color:#166534}.pill.Pending{background:#fef3c7;color:#92400e}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .filters input,.filters select{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;flex:1;min-width:110px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:12px;color:var(--muted);padding:8px;border-bottom:2px solid var(--line);white-space:nowrap;cursor:pointer}
+  td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+  td.amt,th.amt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
+  .muted{color:var(--muted);font-size:12px}
+  .plist .it{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .plist .it:last-child{border:0}
+  a{color:var(--blue)}
+  button.mini{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;margin-right:4px}
+  button.mini.del{color:var(--bad)}
+  .admin-only{display:none}
+  body.admin .admin-only{display:revert}
+  body.admin td.admin-only,body.admin th.admin-only{display:table-cell}
+  .fab{position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;border:0;background:var(--accent);color:#1f2937;font-size:30px;line-height:1;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer;z-index:30;display:none}
+  body.admin .fab{display:block}
+  dialog{border:0;border-radius:14px;padding:0;width:min(480px,94vw);max-height:92vh}
+  dialog::backdrop{background:rgba(0,0,0,.45)}
+  .dlg{padding:16px}
+  .dlg h3{margin:0 0 12px;color:var(--brand)}
+  .dlg label{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+  .dlg input,.dlg select,.dlg textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-family:inherit}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .stats div{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px}
+  .stats .l{font-size:11px;color:var(--muted)}.stats .v{font-weight:700;font-size:15px;margin-top:2px}
+  .ledger .h,.ledger .r{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:6px;padding:6px 0;font-size:13px;border-bottom:1px solid var(--line)}
+  .ledger .h{color:var(--muted);font-size:11px;font-weight:600}
+  .ledger .n{text-align:right;font-variant-numeric:tabular-nums}
+  .due{color:var(--bad);font-weight:600}
+  .dlg .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .btn{padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer}
+  .btn.pri{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:8px;z-index:50;display:none}
+  @media(max-width:700px){
+    .kpi .v{font-size:17px}
+    table,thead,tbody,tfoot,tr,td{display:block}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+    td{border:0;padding:3px 0;display:flex;justify-content:space-between;gap:10px;text-align:right}
+    td::before{content:attr(data-l);color:var(--muted);font-size:12px;text-align:left}
+    td.amt{text-align:right}
+    tfoot tr{padding:8px 10px}
+    tfoot td::before{content:attr(data-l)}
+    body.admin td.admin-only{display:flex}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Construction Expense Tracker<small id="updated">Loading…</small></h1>
+  <button class="hbtn" id="refreshBtn">Refresh</button>
+  <button class="hbtn" id="adminBtn">Admin login</button>
+</header>
+
+<main>
+  <div id="banner"></div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="card" style="margin-bottom:14px"><h2>Who Spent What</h2><div id="partners"></div></section>
+
+  <section class="grid">
+    <div class="card"><h2>Mestri Contract (Labour)</h2><div id="mestri"></div></div>
+    <div class="card"><h2>Materials &amp; Other (you supply)</h2><div id="materials"></div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card"><h2>Budget vs Actual (by category)</h2><div id="budgetBars"></div></div>
+    <div class="card"><h2>Spend by Category</h2><div class="chartbox"><canvas id="cCat"></canvas></div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card"><h2>Monthly Spend</h2><div class="chartbox"><canvas id="cMonth"></canvas></div></div>
+    <div class="card"><h2>Spend by Phase</h2><div class="chartbox" style="height:380px"><canvas id="cPhase"></canvas></div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card"><h2>Pending Payments (to pay) <span class="muted" id="pendTotal"></span></h2><div class="plist" id="pendList"></div></div>
+    <div class="card"><h2>Vendor Ledger</h2><div id="vendors"></div></div>
+  </section>
+
+  <section class="card">
+    <h2>All Expenses</h2>
+    <div class="filters">
+      <input id="fSearch" type="search" placeholder="Search vendor / description…">
+      <select id="fCat"></select>
+      <select id="fPhase"></select>
+      <select id="fStatus"><option value="">All status</option><option>Paid</option><option>Pending</option></select>
+      <select id="fPaidBy"></select>
+      <select id="fMonth"></select>
+    </div>
+    <table>
+      <thead><tr>
+        <th data-s="date">Date</th><th data-s="category">Category</th><th data-s="phase">Phase</th>
+        <th data-s="vendor">Vendor</th><th data-s="description">Description</th>
+        <th class="amt" data-s="amount">Amount</th><th data-s="status">Status</th><th data-s="paidBy">Paid By</th><th>Receipt</th><th class="admin-only"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+      <tfoot><tr><td colspan="5" data-l="Total (filtered)">Total (filtered)</td><td class="amt" id="fTotal" data-l=""></td><td colspan="4"></td></tr></tfoot>
+    </table>
+  </section>
+</main>
+
+<button class="fab" id="fab" title="Add expense">+</button>
+
+<dialog id="dlg">
+  <form method="dialog" class="dlg" id="form">
+    <h3 id="dlgTitle">Add expense</h3>
+    <div class="row2">
+      <div><label>Date *</label><input type="date" id="e_date" required></div>
+      <div><label>Amount (₹) *</label><input type="number" id="e_amount" inputmode="decimal" min="0" step="0.01" required></div>
+    </div>
+    <div class="row2">
+      <div><label>Category *</label><select id="e_category" required></select></div>
+      <div><label>Phase</label><select id="e_phase"></select></div>
+    </div>
+    <label>Vendor / Payee</label><input id="e_vendor" list="vendorList" autocomplete="off">
+    <datalist id="vendorList"></datalist>
+    <label>Description / Item</label><input id="e_description" placeholder="e.g. Cement 53 grade, Slab instalment">
+    <div class="row3">
+      <div><label>Qty</label><input type="number" id="e_qty" inputmode="decimal" min="0" step="any"></div>
+      <div><label>Unit</label><input id="e_unit" list="unitList" autocomplete="off" placeholder="bags"></div>
+      <div><label>Rate (₹)</label><input type="number" id="e_rate" inputmode="decimal" min="0" step="any"></div>
+    </div>
+    <datalist id="unitList"><option>bags</option><option>tons</option><option>kg</option><option>nos</option><option>cft</option><option>sqft</option><option>trips</option><option>loads</option><option>ltr</option></datalist>
+    <div class="muted" style="margin-top:4px">Qty × Rate fills Amount automatically. You can still type Amount directly.</div>
+    <div class="row2">
+      <div><label>Payment mode</label>
+        <select id="e_mode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option><option>Card</option></select></div>
+      <div><label>Status</label><select id="e_status"><option>Paid</option><option>Pending</option></select></div>
+    </div>
+    <label>Paid by (who spent / will pay)</label><input id="e_paidBy" list="paidByList" autocomplete="off" placeholder="e.g. Me, Partner name">
+    <datalist id="paidByList"></datalist>
+    <label>Receipt link (Google Drive / photo URL)</label><input type="url" id="e_receipt" placeholder="https://…">
+    <div class="actions">
+      <button type="button" class="btn" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn pri" id="saveBtn">Save</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CONFIG ============ */
+// Paste your deployed Google Apps Script Web App URL here (see SETUP.md).
+// While empty, the dashboard runs in DEMO mode with sample data.
+const API_URL = 'https://script.google.com/macros/s/AKfycbwuZuEX9cV-vLLLMhMIZqRmdvivD7nEr4_3cH7v9Mq3Udro8gBSsXMN3HySNqD2J5uS/exec';
+
+const MESTRI = 'Mestri Payment';   // category used for payments to the mestri (labour contract)
+const PHASES = ['Planning & Approvals','Excavation & Foundation','Structure (Columns/Slab)','Brickwork','Electrical & Plumbing','Plastering','Flooring & Tiling','Doors & Windows','Interiors','Painting','Other'];
+const CAT_COLORS = ['#2563eb','#f59e0b','#16a34a','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
+const catColors = n => Array.from({ length: n }, (_, i) => CAT_COLORS[i % CAT_COLORS.length]);
+
+/* ============ STATE ============ */
+let expenses = [], budget = [];
+let sortKey = 'date', sortDir = -1;
+let editingId = null;
+let pin = sessionStorage.getItem('adminPin') || '';
+const charts = {};
+const DEMO = !API_URL;
+
+/* ============ HELPERS ============ */
+const $ = id => document.getElementById(id);
+const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const inrShort = n => n >= 1e7 ? '₹' + (n/1e7).toFixed(2) + ' Cr' : n >= 1e5 ? '₹' + (n/1e5).toFixed(2) + ' L' : inr(n);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const monthKey = d => (d || '').slice(0, 7);
+const monthLabel = k => { const [y, m] = k.split('-'); return new Date(y, m - 1).toLocaleString('en-IN', { month: 'short', year: '2-digit' }); };
+const sumBy = (arr, key) => arr.reduce((o, x) => (o[x[key] || 'Unspecified'] = (o[x[key] || 'Unspecified'] || 0) + x.amount, o), {});
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2500); }
+
+/* ============ DATA ============ */
+function demoData(){
+  const d = (m, day) => `2026-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  expenses = [
+    {id:'d1',date:d(1,10),category:'Permits & Fees',phase:'Planning & Approvals',vendor:'Municipal Corp',description:'Building plan approval',amount:45000,paymentMode:'Bank Transfer',status:'Paid',receipt:'',qty:0,unit:'',paidBy:'Me'},
+    {id:'d2',date:d(2,3),category:MESTRI,phase:'Excavation & Foundation',vendor:'Ramesh Mestri',description:'Advance on contract',amount:150000,paymentMode:'Cash',status:'Paid',receipt:'',qty:0,unit:'',paidBy:'Me'},
+    {id:'d3',date:d(2,12),category:'Steel (TMT)',phase:'Excavation & Foundation',vendor:'Sri Steel Traders',description:'TMT 12mm',amount:260000,paymentMode:'Bank Transfer',status:'Paid',receipt:'',qty:4,unit:'tons',paidBy:'Partner'},
+    {id:'d4',date:d(3,5),category:'Cement',phase:'Structure (Columns/Slab)',vendor:'UltraTech Dealer',description:'Cement 53 grade',amount:156000,paymentMode:'UPI',status:'Paid',receipt:'',qty:400,unit:'bags',paidBy:'Me'},
+    {id:'d5',date:d(3,20),category:MESTRI,phase:'Structure (Columns/Slab)',vendor:'Ramesh Mestri',description:'Slab casting - 2nd instalment',amount:200000,paymentMode:'Cash',status:'Paid',receipt:'',qty:0,unit:'',paidBy:'Partner'},
+    {id:'d6',date:d(4,8),category:'Sand',phase:'Structure (Columns/Slab)',vendor:'Lakshmi Transport',description:'River sand',amount:38000,paymentMode:'Cash',status:'Paid',receipt:'',qty:10,unit:'loads',paidBy:'Me'},
+    {id:'d7',date:d(5,2),category:'Bricks / Blocks',phase:'Brickwork',vendor:'Balaji Bricks',description:'Red bricks',amount:114000,paymentMode:'UPI',status:'Pending',receipt:'',qty:12000,unit:'nos',paidBy:'Partner'},
+    {id:'d8',date:d(5,15),category:'Electrical Material',phase:'Electrical & Plumbing',vendor:'Shiva Electricals',description:'Conduit & wiring',amount:92000,paymentMode:'Bank Transfer',status:'Pending',receipt:'',qty:0,unit:'',paidBy:'Me'},
+    {id:'d9',date:d(5,20),category:MESTRI,phase:'Brickwork',vendor:'Ramesh Mestri',description:'Brickwork instalment',amount:120000,paymentMode:'Cash',status:'Pending',receipt:'',qty:0,unit:'',paidBy:'Partner'},
+  ];
+  budget = [{category:MESTRI,budget:800000},{category:'Cement',budget:300000},{category:'Steel (TMT)',budget:500000},{category:'Sand',budget:100000},{category:'Bricks / Blocks',budget:200000},{category:'Electrical Material',budget:150000},{category:'Permits & Fees',budget:50000},{category:'Miscellaneous',budget:50000}];
+}
+
+async function api(body){
+  const r = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ ...body, pin }) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
+
+async function load(){
+  $('banner').innerHTML = '';
+  try {
+    if (DEMO) {
+      if (!expenses.length) demoData();
+      $('banner').innerHTML = '<div class="banner"><b>Demo mode</b> – showing sample data. Set <code>API_URL</code> in index.html to connect your Google Sheet (see SETUP.md).</div>';
+    } else {
+      const r = await fetch(API_URL + (API_URL.includes('?') ? '&' : '?') + 't=' + Date.now());
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      expenses = j.expenses; budget = j.budget;
+    }
+    $('updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    render();
+  } catch (e) {
+    $('banner').innerHTML = '<div class="banner err">Could not load data: ' + esc(e.message) + '</div>';
+    $('updated').textContent = 'Load failed';
+  }
+}
+
+/* ============ RENDER ============ */
+function allCategories(){ return [...new Set([...budget.map(b => b.category), ...expenses.map(e => e.category)].filter(Boolean))]; }
+function allPayers(){ return [...new Set(expenses.map(e => e.paidBy).filter(Boolean))].sort(); }
+function allPhases(){ return [...new Set([...PHASES, ...expenses.map(e => e.phase)].filter(Boolean))]; }
+
+function render(){
+  renderKpis(); renderPartners(); renderMestri(); renderMaterials(); renderBudget(); renderCharts(); renderPending(); renderVendors(); fillSelects(); renderTable();
+}
+
+const sum = arr => arr.reduce((s, e) => s + e.amount, 0);
+const budgetOf = c => (budget.find(b => b.category === c) || {}).budget || 0;
+
+function renderPartners(){
+  const by = {};
+  expenses.forEach(e => {
+    const n = e.paidBy || 'Not specified';
+    const r = by[n] = by[n] || { paid: 0, pending: 0 };
+    if (e.status === 'Pending') r.pending += e.amount; else r.paid += e.amount;
+  });
+  const rows = Object.entries(by).sort((a, b) => (b[1].paid + b[1].pending) - (a[1].paid + a[1].pending));
+  const total = rows.reduce((s, [, r]) => s + r.paid + r.pending, 0);
+  if (!rows.length || (rows.length === 1 && rows[0][0] === 'Not specified')) {
+    $('partners').innerHTML = '<div class="muted">No "Paid by" entries yet. Fill the Paid by field on expenses to see who spent what.</div>'; return;
+  }
+  $('partners').innerHTML = `<div class="ledger"><div class="h"><span>Person</span><span class="n">Paid</span><span class="n">Pending</span><span class="n">% of total</span></div>` +
+    rows.map(([n, r]) => `<div class="r"><span>${esc(n)}</span><span class="n">${inr(r.paid)}</span><span class="n ${r.pending ? 'due' : ''}">${r.pending ? inr(r.pending) : '–'}</span><span class="n">${total ? ((r.paid + r.pending) / total * 100).toFixed(0) : 0}%</span></div>`).join('') + '</div>';
+}
+
+function renderMestri(){
+  const rows = expenses.filter(e => e.category === MESTRI).sort((a, b) => b.date.localeCompare(a.date));
+  const contract = budgetOf(MESTRI);
+  const paid = sum(rows.filter(e => e.status !== 'Pending'));
+  const pend = sum(rows.filter(e => e.status === 'Pending'));
+  const bal = contract - paid - pend;
+  const pct = contract ? (paid + pend) / contract * 100 : 0;
+  $('mestri').innerHTML = `
+    <div class="stats">
+      <div><div class="l">Contract value</div><div class="v">${inrShort(contract)}</div></div>
+      <div><div class="l">Paid so far</div><div class="v">${inrShort(paid)}</div></div>
+      <div><div class="l">${bal < 0 ? 'Overpaid' : 'Balance to give'}</div><div class="v ${bal < 0 ? 'due' : ''}">${inrShort(Math.abs(bal))}</div></div>
+    </div>
+    <div class="bar"><i class="${pct > 100 ? 'bad' : 'ok'}" style="width:${Math.min(pct, 100)}%"></i></div>
+    <div class="muted" style="margin:4px 0 8px">${pct.toFixed(0)}% of contract released${pend ? ` · ${inr(pend)} pending` : ''}</div>
+    <div class="plist">${rows.map(e => `<div class="it"><div><b>${esc(e.description || 'Payment')}</b><div class="muted">${esc(e.date)} · ${esc(e.phase)} · <span class="pill ${e.status === 'Pending' ? 'Pending' : 'Paid'}">${esc(e.status)}</span></div></div><b>${inr(e.amount)}</b></div>`).join('') || '<div class="muted">No payments to mestri yet. Add one with category "' + MESTRI + '".</div>'}</div>`;
+}
+
+function renderMaterials(){
+  const rows = expenses.filter(e => e.category !== MESTRI);
+  const bud = budget.filter(b => b.category !== MESTRI).reduce((s, b) => s + b.budget, 0);
+  const billed = sum(rows);
+  const due = sum(rows.filter(e => e.status === 'Pending'));
+  const pct = bud ? billed / bud * 100 : 0;
+  $('materials').innerHTML = `
+    <div class="stats">
+      <div><div class="l">Budget</div><div class="v">${inrShort(bud)}</div></div>
+      <div><div class="l">Bought / billed</div><div class="v">${inrShort(billed)}</div></div>
+      <div><div class="l">Due to vendors</div><div class="v ${due ? 'due' : ''}">${inrShort(due)}</div></div>
+    </div>
+    <div class="bar"><i class="${pct > 100 ? 'bad' : pct >= 85 ? 'warn' : 'ok'}" style="width:${Math.min(pct, 100)}%"></i></div>
+    <div class="muted" style="margin-top:4px">${pct.toFixed(0)}% of material budget used · ${inrShort(bud - billed)} left</div>`;
+}
+
+function renderKpis(){
+  const total = budget.reduce((s, b) => s + b.budget, 0);
+  const spent = expenses.reduce((s, e) => s + e.amount, 0);
+  const pending = expenses.filter(e => e.status === 'Pending').reduce((s, e) => s + e.amount, 0);
+  const paid = spent - pending;
+  const pct = total ? spent / total * 100 : 0;
+  const rem = total - spent;
+  const cls = pct > 100 ? 'over' : '';
+  $('kpis').innerHTML = [
+    ['Total Budget', inrShort(total), ''],
+    ['Total Spent', inrShort(spent), `Paid ${inrShort(paid)}`],
+    ['Remaining', `<span class="${rem < 0 ? 'over' : ''}">${rem < 0 ? '-' : ''}${inrShort(Math.abs(rem))}</span>`, rem < 0 ? 'Over budget' : ''],
+    ['Budget Used', `<span class="${cls}">${pct.toFixed(1)}%</span>`, ''],
+    ['Pending Payments', inrShort(pending), `${expenses.filter(e => e.status === 'Pending').length} item(s)`],
+  ].map(k => `<div class="kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2] || '&nbsp;'}</div></div>`).join('');
+}
+
+function renderBudget(){
+  const spent = sumBy(expenses, 'category');
+  const cats = allCategories();
+  $('budgetBars').innerHTML = cats.map(c => {
+    const b = (budget.find(x => x.category === c) || {}).budget || 0;
+    const s = spent[c] || 0;
+    const pct = b ? s / b * 100 : (s ? 100 : 0);
+    const cls = pct > 100 ? 'bad' : pct >= 85 ? 'warn' : 'ok';
+    const note = b && s > b ? `<span class="over">Over by ${inrShort(s - b)}</span>` : `${inrShort(s)} / ${inrShort(b)}`;
+    return `<div class="brow"><div class="t"><span>${esc(c)}</span><span>${note} · ${pct.toFixed(0)}%</span></div>
+      <div class="bar"><i class="${cls}" style="width:${Math.min(pct, 100)}%"></i></div></div>`;
+  }).join('') || '<div class="muted">No budget set.</div>';
+}
+
+function drawChart(id, cfg){
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), cfg);
+}
+
+function renderCharts(){
+  if (typeof Chart === 'undefined') return;
+  const byCat = sumBy(expenses, 'category');
+  drawChart('cCat', { type:'doughnut',
+    data:{ labels:Object.keys(byCat), datasets:[{ data:Object.values(byCat), backgroundColor:catColors(Object.keys(byCat).length) }] },
+    options:{ maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12 } }, tooltip:{ callbacks:{ label:c => ` ${c.label}: ${inr(c.parsed)}` } } } } });
+
+  const byMonth = {};
+  expenses.forEach(e => { const k = monthKey(e.date); if (k) byMonth[k] = (byMonth[k] || 0) + e.amount; });
+  const months = Object.keys(byMonth).sort();
+  drawChart('cMonth', { type:'bar',
+    data:{ labels:months.map(monthLabel), datasets:[{ label:'Spend', data:months.map(m => byMonth[m]), backgroundColor:'#2563eb', borderRadius:4 }] },
+    options:{ maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => ' ' + inr(c.parsed.y) } } },
+              scales:{ y:{ ticks:{ callback:v => inrShort(v) } } } } });
+
+  const byPhase = sumBy(expenses, 'phase');
+  const ph = allPhases().map(n => [n, byPhase[n] || 0]);
+  if (byPhase['Unspecified']) ph.push(['Unspecified', byPhase['Unspecified']]);
+  drawChart('cPhase', { type:'bar',
+    data:{ labels:ph.map(p => p[0]), datasets:[{ data:ph.map(p => p[1]), backgroundColor:'#f59e0b', borderRadius:4 }] },
+    options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => ' ' + inr(c.parsed.x) } } },
+              scales:{ x:{ ticks:{ callback:v => inrShort(v) } } } } });
+}
+
+function renderPending(){
+  const p = expenses.filter(e => e.status === 'Pending').sort((a, b) => a.date.localeCompare(b.date));
+  $('pendTotal').textContent = p.length ? '· ' + inr(p.reduce((s, e) => s + e.amount, 0)) : '';
+  $('pendList').innerHTML = p.map(e => `<div class="it"><div><b>${esc(e.vendor || e.category)}</b><div class="muted">${esc(e.description)} · ${esc(e.date)}</div></div><b>${inr(e.amount)}</b></div>`).join('')
+    || '<div class="muted">No pending payments 🎉</div>';
+}
+
+function renderVendors(){
+  const m = {};
+  expenses.filter(e => e.vendor && e.category !== MESTRI).forEach(e => {
+    const v = m[e.vendor] = m[e.vendor] || { billed: 0, paid: 0 };
+    v.billed += e.amount;
+    if (e.status !== 'Pending') v.paid += e.amount;
+  });
+  const list = Object.entries(m).sort((a, b) => (b[1].billed - b[1].paid) - (a[1].billed - a[1].paid) || b[1].billed - a[1].billed);
+  $('vendors').innerHTML = list.length
+    ? `<div class="ledger"><div class="h"><span>Vendor</span><span class="n">Billed</span><span class="n">Paid</span><span class="n">Due</span></div>` +
+      list.map(([n, v]) => { const d = v.billed - v.paid; return `<div class="r"><span>${esc(n)}</span><span class="n">${inr(v.billed)}</span><span class="n">${inr(v.paid)}</span><span class="n ${d ? 'due' : ''}">${d ? inr(d) : '–'}</span></div>`; }).join('') + '</div>'
+    : '<div class="muted">No vendor data.</div>';
+}
+
+function fillSelects(){
+  const keep = id => $(id).value;
+  const fill = (id, first, list) => { const cur = keep(id); $(id).innerHTML = `<option value="">${first}</option>` + list.map(x => `<option value="${esc(x.v)}">${esc(x.t)}</option>`).join(''); $(id).value = cur; };
+  fill('fCat', 'All categories', allCategories().map(c => ({ v:c, t:c })));
+  fill('fPhase', 'All phases', allPhases().map(c => ({ v:c, t:c })));
+  const payers = allPayers();
+  fill('fPaidBy', 'All payers', payers.map(c => ({ v:c, t:c })));
+  $('paidByList').innerHTML = payers.map(p => `<option value="${esc(p)}">`).join('');
+  fill('fMonth', 'All months', [...new Set(expenses.map(e => monthKey(e.date)).filter(Boolean))].sort().reverse().map(k => ({ v:k, t:monthLabel(k) })));
+  // form selects
+  const setOpts = (id, list, cur) => { $(id).innerHTML = list.map(x => `<option>${esc(x)}</option>`).join(''); if (cur) $(id).value = cur; };
+  setOpts('e_category', allCategories(), $('e_category').value);
+  setOpts('e_phase', ['', ...allPhases()], $('e_phase').value);
+  $('vendorList').innerHTML = [...new Set(expenses.map(e => e.vendor).filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('');
+}
+
+function filtered(){
+  const q = $('fSearch').value.trim().toLowerCase();
+  const c = $('fCat').value, p = $('fPhase').value, s = $('fStatus').value, m = $('fMonth').value, pb = $('fPaidBy').value;
+  return expenses.filter(e =>
+    (!c || e.category === c) && (!p || e.phase === p) && (!s || e.status === s) && (!m || monthKey(e.date) === m) && (!pb || e.paidBy === pb) &&
+    (!q || (e.vendor + ' ' + e.description + ' ' + e.category + ' ' + e.paidBy).toLowerCase().includes(q)));
+}
+
+function renderTable(){
+  const rows = filtered().sort((a, b) => {
+    const x = a[sortKey], y = b[sortKey];
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * sortDir;
+  });
+  $('tbody').innerHTML = rows.map(e => `<tr>
+    <td data-l="Date">${esc(e.date)}</td>
+    <td data-l="Category">${esc(e.category)}</td>
+    <td data-l="Phase">${esc(e.phase)}</td>
+    <td data-l="Vendor">${esc(e.vendor)}</td>
+    <td data-l="Description">${esc(e.description)}${e.qty ? `<div class="muted">${e.qty.toLocaleString('en-IN')} ${esc(e.unit)} @ ${inr(e.amount / e.qty)}</div>` : ''}</td>
+    <td class="amt" data-l="Amount">${inr(e.amount)}</td>
+    <td data-l="Status"><span class="pill ${e.status === 'Pending' ? 'Pending' : 'Paid'}">${esc(e.status)}</span></td>
+    <td data-l="Paid By">${esc(e.paidBy) || '–'}</td>
+    <td data-l="Receipt">${/^https?:\/\//.test(e.receipt) ? `<a href="${esc(e.receipt)}" target="_blank" rel="noopener">View</a>` : '–'}</td>
+    <td class="admin-only"><button class="mini" data-edit="${esc(e.id)}">Edit</button><button class="mini del" data-del="${esc(e.id)}">Delete</button></td>
+  </tr>`).join('') || '<tr><td colspan="10" class="muted">No expenses match.</td></tr>';
+  $('fTotal').textContent = inr(rows.reduce((s, e) => s + e.amount, 0));
+}
+
+/* ============ ADMIN ============ */
+function setAdmin(on){
+  document.body.classList.toggle('admin', on);
+  $('adminBtn').textContent = on ? 'Admin ✓ (logout)' : 'Admin login';
+  $('adminBtn').classList.toggle('on', on);
+}
+
+async function adminClick(){
+  if (document.body.classList.contains('admin')) { pin = ''; sessionStorage.removeItem('adminPin'); setAdmin(false); return; }
+  const p = prompt('Enter admin PIN');
+  if (!p) return;
+  try {
+    if (!DEMO) { pin = p; await api({ action:'verify' }); }
+    else pin = p;
+    sessionStorage.setItem('adminPin', pin);
+    setAdmin(true);
+    toast('Admin mode on');
+  } catch (e) { pin = ''; toast(e.message); }
+}
+
+function openForm(e){
+  editingId = e ? e.id : null;
+  $('dlgTitle').textContent = e ? 'Edit expense' : 'Add expense';
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  $('e_date').value = e ? e.date : today;
+  $('e_amount').value = e ? e.amount : '';
+  $('e_category').value = e ? e.category : $('e_category').options[0]?.value;
+  $('e_phase').value = e ? e.phase : '';
+  $('e_vendor').value = e ? e.vendor : '';
+  $('e_description').value = e ? e.description : '';
+  $('e_qty').value = e && e.qty ? e.qty : '';
+  $('e_unit').value = e ? e.unit || '' : '';
+  $('e_rate').value = e && e.qty ? +(e.amount / e.qty).toFixed(2) : '';
+  $('e_mode').value = e ? e.paymentMode || 'Cash' : 'Cash';
+  $('e_status').value = e ? e.status : 'Paid';
+  $('e_paidBy').value = e ? e.paidBy || '' : (localStorage.getItem('lastPaidBy') || '');
+  $('e_receipt').value = e ? e.receipt : '';
+  $('dlg').showModal();
+}
+
+async function saveForm(ev){
+  ev.preventDefault();
+  const x = {
+    id: editingId, date:$('e_date').value, amount:parseFloat($('e_amount').value), category:$('e_category').value,
+    phase:$('e_phase').value, vendor:$('e_vendor').value.trim(), description:$('e_description').value.trim(),
+    paymentMode:$('e_mode').value, qty:parseFloat($('e_qty').value) || 0, unit:$('e_unit').value.trim(), status:$('e_status').value, paidBy:$('e_paidBy').value.trim(), receipt:$('e_receipt').value.trim()
+  };
+  $('saveBtn').disabled = true; $('saveBtn').textContent = 'Saving…';
+  try {
+    if (DEMO) {
+      if (editingId) expenses = expenses.map(e => e.id === editingId ? x : e);
+      else expenses.push({ ...x, id:'n' + Date.now() });
+    } else {
+      await api({ action: editingId ? 'update' : 'add', expense:x });
+    }
+    if (x.paidBy) localStorage.setItem('lastPaidBy', x.paidBy); $('dlg').close();
+    toast('Saved');
+    await load();
+  } catch (e) { toast(e.message); }
+  finally { $('saveBtn').disabled = false; $('saveBtn').textContent = 'Save'; }
+}
+
+async function del(id){
+  if (!confirm('Delete this expense?')) return;
+  try {
+    if (DEMO) expenses = expenses.filter(e => e.id !== id);
+    else await api({ action:'delete', id });
+    toast('Deleted');
+    await load();
+  } catch (e) { toast(e.message); }
+}
+
+/* ============ EVENTS ============ */
+$('refreshBtn').onclick = load;
+$('adminBtn').onclick = adminClick;
+$('fab').onclick = () => openForm();
+$('cancelBtn').onclick = () => $('dlg').close();
+$('form').onsubmit = saveForm;
+['e_qty','e_rate'].forEach(id => $(id).addEventListener('input', () => {
+  const q = parseFloat($('e_qty').value), r = parseFloat($('e_rate').value);
+  if (q > 0 && r > 0) $('e_amount').value = +(q * r).toFixed(2);
+}));
+['fSearch','fCat','fPhase','fStatus','fMonth','fPaidBy'].forEach(id => $(id).addEventListener('input', renderTable));
+document.querySelectorAll('th[data-s]').forEach(th => th.onclick = () => {
+  const k = th.dataset.s; sortDir = sortKey === k ? -sortDir : (k === 'amount' || k === 'date' ? -1 : 1); sortKey = k; renderTable();
+});
+$('tbody').addEventListener('click', e => {
+  const ed = e.target.dataset.edit, dl = e.target.dataset.del;
+  if (ed) openForm(expenses.find(x => x.id === ed));
+  if (dl) del(dl);
+});
+
+if (pin) setAdmin(true);
+load();
+</script>
+</body>
+</html>
