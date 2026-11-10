@@ -28,6 +28,12 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:14px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
   .card h2{font-size:14px;margin:0 0 10px;color:var(--brand)}
+  details.card>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+  details.card>summary::-webkit-details-marker{display:none}
+  details.card>summary::before{content:"▸";color:var(--brand);font-size:14px;transition:transform .15s}
+  details.card[open]>summary::before{transform:rotate(90deg)}
+  details.card>summary h2{margin:0}
+  details.card[open]>summary{margin-bottom:10px}
   .chartbox{position:relative;height:250px}
   .bar{height:9px;background:#e5e7eb;border-radius:6px;overflow:hidden}
   .bar>i{display:block;height:100%;background:var(--blue)}
@@ -109,18 +115,18 @@
   </section>
 
   <section class="grid">
-    <div class="card"><h2>Budget vs Actual (by category)</h2><div id="budgetBars"></div></div>
-    <div class="card"><h2>Spend by Category</h2><div class="chartbox"><canvas id="cCat"></canvas></div></div>
+    <details class="card"><summary><h2>Budget vs Actual (by category)</h2></summary><div id="budgetBars"></div></details>
+    <details class="card"><summary><h2>Spend by Category</h2></summary><div class="chartbox"><canvas id="cCat"></canvas></div></details>
   </section>
 
   <section class="grid">
-    <div class="card"><h2>Monthly Spend</h2><div class="chartbox"><canvas id="cMonth"></canvas></div></div>
-    <div class="card"><h2>Spend by Phase</h2><div class="chartbox" style="height:380px"><canvas id="cPhase"></canvas></div></div>
+    <details class="card"><summary><h2>Monthly Spend</h2></summary><div class="chartbox"><canvas id="cMonth"></canvas></div></details>
+    <details class="card"><summary><h2>Spend by Phase</h2></summary><div class="chartbox" style="height:380px"><canvas id="cPhase"></canvas></div></details>
   </section>
 
   <section class="grid">
-    <div class="card"><h2>Pending Payments (to pay) <span class="muted" id="pendTotal"></span></h2><div class="plist" id="pendList"></div></div>
-    <div class="card"><h2>Vendor Ledger</h2><div id="vendors"></div></div>
+    <details class="card"><summary><h2>Pending Payments (to pay) <span class="muted" id="pendTotal"></span></h2></summary><div class="plist" id="pendList"></div></details>
+    <details class="card"><summary><h2>Vendor Ledger</h2></summary><div id="vendors"></div></details>
   </section>
 
   <section class="card">
@@ -354,6 +360,10 @@ function drawChart(id, cfg){
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart($(id), cfg);
 }
+
+document.querySelectorAll('details.card').forEach(d => d.addEventListener('toggle', () => {
+  if (d.open) d.querySelectorAll('canvas').forEach(cv => charts[cv.id] && charts[cv.id].resize());
+}));
 
 function renderCharts(){
   if (typeof Chart === 'undefined') return;
